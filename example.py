@@ -1,17 +1,17 @@
 from volvelle import *
 
-class Ages(Volvelle):
+class Names(Volvelle):
     def __init__(self):
-        self.person = OneOf()
+        self.firstname = OneOf()
 
-    def age(self):
-        if self.person == "Omar":
+    def lastname(self):
+        if self.firstname == "Omar":
             return "Rizwan"
-        elif self.person == "Max":
+        elif self.firstname == "Max":
             return "Krieger"
-        elif self.person == "Ian":
+        elif self.firstname == "Ian":
             return "Clester"
-        elif self.person == "Andrew":
+        elif self.firstname == "Andrew":
             return "Blinn"
 
-Ages().render()
+Names().render()
