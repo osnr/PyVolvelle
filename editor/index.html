@@ -1,16 +1,19 @@
+<!doctype html>
 <html>
-  <script src="vendor/brython.js"></script>
-  <script src="vendor/codemirror.js"></script>
+  <head>
+    <meta charset="utf-8">
+    <title>PyVolvelle Editor</title>
+
+    <script src="vendor/brython.js"></script>
+    <script src="vendor/codemirror.js"></script>
+  </head>
 
   <body onload="brython()">
+    <div class="editor" style="width: 50%; height: 100%"></div>
+    <div style="width: 50%; height: 100%; background-color: green"></div>
+    
     <script>
-     const {basicSetup} = CM["codemirror"];
-     const {EditorView, keymap} = CM["@codemirror/view"];
-     const {EditorState} = CM["@codemirror/state"];
-     const {javascript} = CM["@codemirror/lang-javascript"];
-    </script>
-
-<textarea style="height: 100%; width: 50%; font: 14px monospace">
+     const defaultCode = `
 from volvelle import *
 
 class Names(Volvelle):
@@ -28,6 +31,22 @@ class Names(Volvelle):
             return "Blinn"
 
 Names().render()
-</textarea>
+`;
+     const {basicSetup} = CM["codemirror"];
+     const {EditorView, keymap} = CM["@codemirror/view"];
+     const {EditorState} = CM["@codemirror/state"];
+     const {python} = CM["@codemirror/lang-python"];
+
+     const liveReload = EditorView.updateListener.of(e => {
+       const code = e.state.doc.toString();
+       eval(__BRYTHON__.python_to_js(code));
+     });
+
+     const view = new EditorView({
+       doc: defaultCode,
+       extensions: [basicSetup, python(), liveReload],
+       parent: document.getElementsByClassName("editor")[0]
+     });
+    </script>
   </body>
 </html>
