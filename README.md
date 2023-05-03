@@ -15,6 +15,10 @@ PyTorch
 
 Nomogram
 
+https://damassets.autodesk.net/content/dam/autodesk/research/publications-assets/pdf/moveablemaker-facilitating-the-design.pdf
+
+Volvelleteer
+
 Slide rule
 
 OneOf -- discrete choice
