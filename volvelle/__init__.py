@@ -24,6 +24,9 @@ class Volvelle:
 
             print(inp, table)
 
+            # Generate PostScript
+            
+
 class Input:
     pass
 class OneOf(Input):

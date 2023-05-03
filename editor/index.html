@@ -1,9 +1,33 @@
 <html>
   <script src="vendor/brython.js"></script>
+  <script src="vendor/codemirror.js"></script>
 
   <body onload="brython()">
-    <script type="text/python">
-     print("Hello")
+    <script>
+     const {basicSetup} = CM["codemirror"];
+     const {EditorView, keymap} = CM["@codemirror/view"];
+     const {EditorState} = CM["@codemirror/state"];
+     const {javascript} = CM["@codemirror/lang-javascript"];
     </script>
+
+<textarea style="height: 100%; width: 50%; font: 14px monospace">
+from volvelle import *
+
+class Names(Volvelle):
+    def __init__(self):
+        self.firstname = OneOf()
+
+    def lastname(self):
+        if self.firstname == "Omar":
+            return "Rizwan"
+        elif self.firstname == "Max":
+            return "Krieger"
+        elif self.firstname == "Ian":
+            return "Clester"
+        elif self.firstname == "Andrew":
+            return "Blinn"
+
+Names().render()
+</textarea>
   </body>
 </html>
