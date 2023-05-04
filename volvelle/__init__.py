@@ -4,12 +4,22 @@ from browser import document, svg
 from browser.html import SVG
 preview = document.select_one(".preview")
 
-def renderTable(table):
-    container = SVG()
-    for outp, tableForOutp in table.items():
-        container <= svg.text("OK", x=70, y=25)
+def renderTable(rows):
+    container = SVG(viewBox="-1 -1 2 2")
+    container <= svg.circle(cx=0, cy=0, r=1, fill="white",
+                            stroke="red", stroke_width=0.01)
+
+    def renderRow(row):
+        ret = svg.g()
+        for idx, column in enumerate(row):
+            ret <= svg.text(row[column], x=0, y=idx*0.1, font_size=0.1)
+        return ret
+
+    for row in rows:
+        container <= renderRow(row)
 
     # TODO: clear preview
+    preview.innerHTML = ""
     preview <= container
 
 class Volvelle:
@@ -27,25 +37,24 @@ class Volvelle:
         for outp in outputs:
             getattr(self, outp)()
 
-        table = {}
         for inp in inputs:
             inpObj = getattr(self, inp)
-            if inp not in table:
-                table[inp] = {}
 
-            for outp in outputs:
-                outpObj = getattr(self, outp)
-                if outp not in table[inp]:
-                    table[inp][outp] = {}
+            rows = []
+            for inpOption in inpObj.options:
+                row = {}
+                row[inp] = inpOption
+                for outp in outputs:
+                    outpObj = getattr(self, outp)
 
-                # keep calling until entire input space has been
-                # enumerated
-                for inpOption in inpObj.options:
                     inpObj.currentOption = inpOption
-                    table[inp][outp][inpOption] = outpObj()
+                    row[outp] = outpObj()
+                    inpObj.currentOption = None
+
+                rows.append(row)
 
             # Generate PostScript
-            renderTable(table[inp])
+            renderTable(rows)
 
 class Input:
     pass
