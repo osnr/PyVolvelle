@@ -53,6 +53,12 @@ Names().render()
        extensions: [basicSetup, python(), liveReload],
        parent: document.getElementsByClassName("editor")[0]
      });
+
+     window.replaceLine = (from, to, insert) => {
+       view.dispatch({
+         changes: {from, to, insert}
+       });
+     };
     </script>
   </body>
 </html>

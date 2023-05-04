@@ -1,4 +1,5 @@
 import sys
+import re
 
 from browser import document, svg, console, window
 from browser.html import SVG
@@ -59,8 +60,15 @@ class Volvelle:
                 return
             dx = ev.pageX - self.drag["startX"]
             dy = ev.pageY - self.drag["startY"]
-            print("Dragging", self.drag["column"])
-            print(window.code.split('\n')[getattr(self, self.drag["column"]).callerLineNumber - 1])
+            print("Dragging", dy, self.drag["column"])
+
+            lines = window.code.split('\n')
+            line = lines[self.drag["column"].callerLineNumber-1]
+            start = len("\n".join(lines[0:self.drag["column"].callerLineNumber-1])) + 1
+            end = start + len(line)
+            line = line.replace("OneOf()", "OneOf(sep=10)")
+            line = re.sub(r"sep=[\-\d]+", "sep=" + str(dy), line)
+            window.replaceLine(start, end, line)
 
         def handleMouseUp(ev):
             self.drag = None
@@ -69,12 +77,14 @@ class Volvelle:
 
         def renderRow(row):
             ret = svg.g()
-            for idx, column in enumerate(row):
-                ret <= renderField(idx, column)
+            for idx, columnName in enumerate(row):
+                ret <= renderField(idx, row, columnName)
             return ret
 
-        def renderField(idx, column):
-            field = svg.text(row[column], x=0, y=idx*10, font_size=10)
+        def renderField(idx, row, columnName):
+            column = getattr(self, columnName)
+            sep = column.sep if hasattr(column, "sep") else 10
+            field = svg.text(row[columnName], x=0, y=sep+(idx*sep), font_size=10)
             field.bind("mousedown", lambda ev: handleMouseDown(column, ev))
             return field
 
@@ -89,8 +99,10 @@ class Input:
 
 
 class OneOf(Input):
-    def __init__(self):
+    def __init__(self, sep=10):
         self.callerLineNumber = sys._getframe(1).f_lineno
+
+        self.sep = sep
 
         self.currentOption = None
         self.options = {}
