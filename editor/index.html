@@ -5,13 +5,14 @@
     <title>PyVolvelle Editor</title>
 
     <script src="vendor/brython.js"></script>
+    <script src="vendor/brython_stdlib.js"></script>
     <script src="vendor/codemirror.js"></script>
   </head>
 
-  <body onload="brython()">
-    <div class="editor" style="width: 50%; height: 100%"></div>
-    <div style="width: 50%; height: 100%; background-color: green"></div>
-    
+  <body onload="brython(1)">
+    <div class="editor" style="position: absolute; top: 0; left: 0; width: 50%; height: 100%"></div>
+    <div class="preview" style="position: absolute; top: 0; left: 51%; width: 50%; height: 100%; background-color: green"></div>
+
     <script>
      const defaultCode = `
 from volvelle import *
@@ -39,7 +40,11 @@ Names().render()
 
      const liveReload = EditorView.updateListener.of(e => {
        const code = e.state.doc.toString();
-       eval(__BRYTHON__.python_to_js(code));
+       try {
+         eval(__BRYTHON__.python_to_js(code));
+       } catch (e) {
+         console.error(e);
+       }
      });
 
      const view = new EditorView({

@@ -1,31 +1,51 @@
+# first, render the input A B C
+# A -> A1, B -> B2, C -> C3
+from browser import document, svg
+from browser.html import SVG
+preview = document.select_one(".preview")
+
+def renderTable(table):
+    container = SVG()
+    for outp, tableForOutp in table.items():
+        container <= svg.text("OK", x=70, y=25)
+
+    # TODO: clear preview
+    preview <= container
+
 class Volvelle:
     def render(self):
-        # trampoline that keeps calling each output until all
-        # combinations have been enumerated
         inputs = []
         outputs = []
-        for prop in dir(self):
-            if not prop.startswith("__") and prop != "render":
-                prop = getattr(self, prop)
+        for propName in dir(self):
+            if not propName.startswith("__") and propName != "render":
+                prop = getattr(self, propName)
                 if callable(prop):
-                    outputs.append(prop)
+                    outputs.append(propName)
                 elif isinstance(prop, Input):
-                    inputs.append(prop)
+                    inputs.append(propName)
 
         for outp in outputs:
-            outp()
+            getattr(self, outp)()
 
+        table = {}
         for inp in inputs:
-            table = {}
-            for outp in outputs:
-                for inpOption in inp.options:
-                    inp.currentOption = inpOption
-                    table[inpOption] = outp()
+            inpObj = getattr(self, inp)
+            if inp not in table:
+                table[inp] = {}
 
-            print(inp, table)
+            for outp in outputs:
+                outpObj = getattr(self, outp)
+                if outp not in table[inp]:
+                    table[inp][outp] = {}
+
+                # keep calling until entire input space has been
+                # enumerated
+                for inpOption in inpObj.options:
+                    inpObj.currentOption = inpOption
+                    table[inp][outp][inpOption] = outpObj()
 
             # Generate PostScript
-            
+            renderTable(table[inp])
 
 class Input:
     pass
