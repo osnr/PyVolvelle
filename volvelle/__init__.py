@@ -1,5 +1,6 @@
 import sys
 import re
+import math
 
 from browser import document, svg, console, window
 from browser.html import SVG
@@ -39,9 +40,12 @@ class Input:
 
 
 class Slide(Input):
-    def __init__(self, a, b):
+    def __init__(self, a, b, offsetAngle=0, offsetDistance=0):
         self.a = a
         self.b = b
+
+        self.offsetAngle = offsetAngle
+        self.offsetDistance = offsetDistance
 
     def __mul__(self, other):
         return Slide(self.a * other, self.b * other)
@@ -61,10 +65,11 @@ class Slide(Input):
             outpSlide.render(volvelle, container, [], sep=sep+20)
 
 class OneOf(Input):
-    def __init__(self, sep=10):
+    def __init__(self, offsetAngle=0, offsetDistance=0):
         self.callerLineNumber = sys._getframe(1).f_lineno
 
-        self.sep = sep
+        self.offsetAngle = offsetAngle
+        self.offsetDistance = offsetDistance
 
         self.currentChoice = None
         self.choices = {}
@@ -106,13 +111,16 @@ class OneOf(Input):
                 return
             dx = ev.pageX - self.drag["startX"]
             dy = ev.pageY - self.drag["startY"]
+            dr = math.sqrt(dx**2 + dy**2)
+            dtheta = math.atan2(dy, dx)
 
             lines = window.code.split('\n')
             line = lines[self.drag["column"].callerLineNumber-1]
             start = len("\n".join(lines[0:self.drag["column"].callerLineNumber-1])) + 1
             end = start + len(line)
-            line = line.replace("OneOf()", "OneOf(sep=10)")
-            line = re.sub(r"sep=[\-\d]+", "sep=" + str(dy), line)
+            line = line.replace("OneOf()", "OneOf(offsetDistance=0, offsetAngle=0)")
+            line = re.sub(r"offsetDistance=[\-\d\.]+", "offsetDistance=" + str(dr), line)
+            line = re.sub(r"offsetAngle=[\-\d\.]+", "offsetAngle=" + str(dtheta), line)
             window.replaceLine(start, end, line)
 
         def handleMouseUp(ev):
@@ -122,14 +130,18 @@ class OneOf(Input):
 
         def renderRow(row):
             ret = svg.g()
-            for idx, columnName in enumerate(row):
-                ret <= renderField(idx, row, columnName)
+            for columnIdx, columnName in enumerate(row):
+                ret <= renderField(columnIdx, row, columnName)
             return ret
 
-        def renderField(idx, row, columnName):
+        def renderField(columnIdx, row, columnName):
             column = getattr(volvelle, columnName)
-            sep = column.sep if hasattr(column, "sep") else 10
-            field = svg.text(row[columnName], x=0, y=sep+(idx*sep), font_size=10)
+            offsetDistance = column.offsetDistance if hasattr(column, "offsetDistance") else columnIdx*20
+            offsetAngle = column.offsetAngle if hasattr(column, "offsetAngle") else 0
+            field = svg.text(row[columnName],
+                             x=offsetDistance*math.cos(offsetAngle),
+                             y=offsetDistance*math.sin(offsetAngle),
+                             font_size=10)
             field.bind("mousedown", lambda ev: handleMouseDown(column, ev))
             return field
 
