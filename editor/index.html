@@ -40,6 +40,7 @@ Names().render()
 
      const liveReload = EditorView.updateListener.of(e => {
        const code = e.state.doc.toString();
+       window.code = code;
        try {
          eval(__BRYTHON__.python_to_js(code));
        } catch (e) {
