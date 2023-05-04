@@ -15,8 +15,11 @@ def renderTable(rows):
             ret <= svg.text(row[column], x=0, y=idx*0.1, font_size=0.1)
         return ret
 
-    for row in rows:
-        container <= renderRow(row)
+    for idx, row in enumerate(rows):
+        rowG = renderRow(row)
+        rowG.setAttribute("transform", "rotate(" + str(idx/len(rows) * 360) + ") translate(0.5)")
+        print(rowG)
+        container <= rowG
 
     # TODO: clear preview
     preview.innerHTML = ""
