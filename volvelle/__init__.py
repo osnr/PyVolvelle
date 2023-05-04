@@ -21,9 +21,17 @@ class Volvelle:
         for outp in outputs:
             getattr(self, outp)()
 
+        container = SVG(viewBox="-100 -100 200 200")
+        # We need to mount the container so we can attach events to
+        # the SVG subelements.
+        preview.innerHTML = ""
+        preview <= container
+        container <= svg.circle(cx=0, cy=0, r=100, fill="white",
+                                stroke="red", stroke_width=0.01)
+
         for inp in inputs:
             inpObj = getattr(self, inp)
-            inpObj.render(self, outputs)
+            inpObj.render(self, container, outputs)
 
 
 class Input:
@@ -38,20 +46,19 @@ class Slide(Input):
     def __mul__(self, other):
         return Slide(self.a * other, self.b * other)
 
-    def render(self, outputs):
-        container = SVG(viewBox="-100 -100 200 200")
-        # We need to mount the container so we can attach events to
-        # the SVG subelements.
-        preview.innerHTML = ""
-        preview <= container
-        container <= svg.circle(cx=0, cy=0, r=100, fill="white",
-                                stroke="red", stroke_width=0.01)
-        
+    def render(self, volvelle, container, outputs, sep=0):
+        container <= svg.circle(cx=0, cy=0, r=80-sep, fill="none",
+                                stroke="black", stroke_width=1)
+        for i in range(self.a, self.b):
+            label = svg.text(i, x=0, y=-80+sep)
+            label.setAttribute("transform", "rotate(" + str((i - self.a)/(self.b - self.a) * 360) + ")")
+            container <= label
+
         for outp in outputs:
-            outpObj = getattr(self, outp)
+            outpObj = getattr(volvelle, outp)
             outpSlide = outpObj()
 
-            outpSlide.render([])
+            outpSlide.render(volvelle, container, [], sep=sep+20)
 
 class OneOf(Input):
     def __init__(self, sep=10):
@@ -72,7 +79,7 @@ class OneOf(Input):
 
         return self.currentChoice == other
 
-    def render(self, volvelle, outputs):
+    def render(self, volvelle, container, outputs):
         rows = []
         for choice in self.choices:
             row = {}
@@ -87,15 +94,6 @@ class OneOf(Input):
             rows.append(row)
 
         # Generate PostScript:
-
-        container = SVG(viewBox="-100 -100 200 200")
-        # We need to mount the container so we can attach events to
-        # the SVG subelements.
-        preview.innerHTML = ""
-        preview <= container
-        container <= svg.circle(cx=0, cy=0, r=100, fill="white",
-                                stroke="red", stroke_width=0.01)
-
         self.drag = None
         def handleMouseDown(column, ev):
             self.drag = {"target": ev.target, "column": column,
