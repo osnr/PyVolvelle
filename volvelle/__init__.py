@@ -6,21 +6,22 @@ from browser import document, svg, console, window
 from browser.html import SVG
 preview = document.select_one(".preview")
 
-class Volvelle:
+class Volvelle(object):
     def render(self):
-        inputs = []
-        outputs = []
+        self._inputs = {}
+        self._outputs = {}
         for propName in dir(self):
-            if not propName.startswith("__") and not hasattr(Volvelle, propName):
+            if not propName.startswith("_") and not hasattr(Volvelle, propName):
                 prop = getattr(self, propName)
                 if callable(prop):
-                    outputs.append(propName)
+                    prop = Output(prop, name=propName)
+                    self._outputs[propName] = prop
                 elif isinstance(prop, Input):
                     prop.name = propName
-                    inputs.append(propName)
+                    self._inputs[propName] = prop
 
-        for outp in outputs:
-            getattr(self, outp)()
+        for outp in self._outputs.values():
+            outp.fn()
 
         container = SVG(viewBox="-100 -100 200 200")
         # We need to mount the container so we can attach events to
@@ -30,9 +31,8 @@ class Volvelle:
         container <= svg.circle(cx=0, cy=0, r=100, fill="white",
                                 stroke="red", stroke_width=0.01)
 
-        for inp in inputs:
-            inpObj = getattr(self, inp)
-            inpObj.render(self, container, outputs)
+        for inp in self._inputs.values():
+            inp.render(container, self._inputs, self._outputs)
 
 
 class Input:
@@ -50,7 +50,10 @@ class Slide(Input):
     def __mul__(self, other):
         return Slide(self.a * other, self.b * other)
 
-    def render(self, volvelle, container, outputs, sep=0):
+    def __add__(self, other):
+        return Slide(self.a + other, self.b + other)
+
+    def render(self, container, inputs, outputs, sep=0):
         container <= svg.circle(cx=0, cy=0, r=80-sep, fill="none",
                                 stroke="black", stroke_width=1)
         for i in range(self.a, self.b):
@@ -59,10 +62,9 @@ class Slide(Input):
             container <= label
 
         for outp in outputs:
-            outpObj = getattr(volvelle, outp)
-            outpSlide = outpObj()
+            outpSlide = outp.fn()
 
-            outpSlide.render(volvelle, container, [], sep=sep+20)
+            outpSlide.render(container, [], [], sep=sep+20)
 
 class OneOf(Input):
     def __init__(self, offsetAngle=0, offsetDistance=0):
@@ -84,16 +86,14 @@ class OneOf(Input):
 
         return self.currentChoice == other
 
-    def render(self, volvelle, container, outputs):
+    def render(self, container, inputs, outputs):
         rows = []
         for choice in self.choices:
             row = {}
             row[self.name] = choice
-            for outp in outputs:
-                outpObj = getattr(volvelle, outp)
-
+            for outp in outputs.values():
                 self.currentChoice = choice
-                row[outp] = outpObj()
+                row[outp.name] = outp.fn()
                 self.currentChoice = None
 
             rows.append(row)
@@ -101,6 +101,7 @@ class OneOf(Input):
         # Generate PostScript:
         self.drag = None
         def handleMouseDown(column, ev):
+            console.log("mousedown", column)
             self.drag = {"target": ev.target, "column": column,
                          "startX": ev.pageX, "startY": ev.pageY}
             document.body.bind("mousemove", handleMouseMove)
@@ -116,6 +117,7 @@ class OneOf(Input):
 
             lines = window.code.split('\n')
             line = lines[self.drag["column"].callerLineNumber-1]
+            print(line)
             start = len("\n".join(lines[0:self.drag["column"].callerLineNumber-1])) + 1
             end = start + len(line)
             line = line.replace("OneOf()", "OneOf(offsetDistance=0, offsetAngle=0)")
@@ -135,13 +137,14 @@ class OneOf(Input):
             return ret
 
         def renderField(columnIdx, row, columnName):
-            column = getattr(volvelle, columnName)
+            column = outputs[columnName] if columnName in outputs else inputs[columnName]
             offsetDistance = column.offsetDistance if hasattr(column, "offsetDistance") else columnIdx*20
             offsetAngle = column.offsetAngle if hasattr(column, "offsetAngle") else 0
             field = svg.text(row[columnName],
                              x=offsetDistance*math.cos(offsetAngle),
                              y=offsetDistance*math.sin(offsetAngle),
                              font_size=10)
+            field.style.cursor = "move"
             field.bind("mousedown", lambda ev: handleMouseDown(column, ev))
             return field
 
@@ -149,3 +152,18 @@ class OneOf(Input):
             rowG = renderRow(row)
             rowG.setAttribute("transform", "rotate(" + str(idx/len(rows) * 360) + ") translate(50)")
             container <= rowG
+
+
+class Output:
+    def __init__(self, fn, name):
+        self.fn = fn
+        self.name = name
+        self.callerLineNumber = fn.__code__.co_firstlineno
+
+
+def output(offsetDistance=0, offsetAngle=0):
+    def decorator(fn):
+        def decorated_fn(*args, **kwargs):
+            return fn(*args, **kwargs)
+        return decorated_fn
+    return decorator
