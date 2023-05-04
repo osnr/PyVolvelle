@@ -1,17 +1,10 @@
 from volvelle import *
 
-class Names(Volvelle):
+class Doubler(Volvelle):
     def __init__(self):
-        self.firstname = OneOf()
+        self.x = Slide(1, 10)
 
-    def lastname(self):
-        if self.firstname == "Omar":
-            return "Rizwan"
-        elif self.firstname == "Max":
-            return "Krieger"
-        elif self.firstname == "Ian":
-            return "Clester"
-        elif self.firstname == "Andrew":
-            return "Blinn"
+    def twox(self):
+        return self.x * 2
 
 Names().render()

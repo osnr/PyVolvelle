@@ -11,28 +11,45 @@
 
   <body onload="brython(1)">
     <div class="editor" style="position: absolute; top: 0; left: 0; width: 50%; height: 100%"></div>
+    <div class="examples" style="position: absolute; bottom: 0; left: 0; width: 100%"></div>
+
     <div class="preview" style="position: absolute; top: 0; left: 51%; width: 50%; height: 100%; background-color: green"></div>
 
     <script>
-     const defaultCode = `
+     const examples = {
+       names: `
 from volvelle import *
 
 class Names(Volvelle):
-    def __init__(self):
-        self.firstname = OneOf()
+  def __init__(self):
+    self.firstname = OneOf()
 
-    def lastname(self):
-        if self.firstname == "Omar":
-            return "Rizwan"
-        elif self.firstname == "Max":
-            return "Krieger"
-        elif self.firstname == "Ian":
-            return "Clester"
-        elif self.firstname == "Andrew":
-            return "Blinn"
+  def lastname(self):
+    if self.firstname == "Omar":
+      return "Rizwan"
+    elif self.firstname == "Max":
+      return "Krieger"
+    elif self.firstname == "Ian":
+      return "Clester"
+    elif self.firstname == "Andrew":
+      return "Blinn"
 
 Names().render()
-`;
+`,
+       doubler: `
+from volvelle import *
+
+class Doubler(Volvelle):
+  def __init__(self):
+    self.x = Slide(1, 10)
+
+  def two_x(self):
+    return self.x * 2
+
+Doubler().render()
+`
+     };
+
      const {basicSetup} = CM["codemirror"];
      const {EditorView, keymap} = CM["@codemirror/view"];
      const {EditorState} = CM["@codemirror/state"];
@@ -49,7 +66,7 @@ Names().render()
      });
 
      const view = new EditorView({
-       doc: defaultCode,
+       doc: examples["names"].trimStart(),
        extensions: [basicSetup, python(), liveReload],
        parent: document.getElementsByClassName("editor")[0]
      });
@@ -59,6 +76,20 @@ Names().render()
          changes: {from, to, insert}
        });
      };
+     
+     const examplesEl = document.body.getElementsByClassName("examples")[0];
+     for (const [exampleName, exampleCode] of Object.entries(examples)) {
+       const btn = document.createElement("button");
+       btn.innerText = exampleName;
+       examplesEl.appendChild(btn);
+       btn.onclick = () => {
+         view.dispatch({ changes: {
+           from: 0,
+           to: view.state.doc.length,
+           insert: exampleCode.trimStart()
+         } });
+       };
+     }
     </script>
   </body>
 </html>

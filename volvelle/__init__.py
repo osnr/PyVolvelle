@@ -15,6 +15,7 @@ class Volvelle:
                 if callable(prop):
                     outputs.append(propName)
                 elif isinstance(prop, Input):
+                    prop.name = propName
                     inputs.append(propName)
 
         for outp in outputs:
@@ -22,24 +23,71 @@ class Volvelle:
 
         for inp in inputs:
             inpObj = getattr(self, inp)
+            inpObj.render(self, outputs)
 
-            rows = []
-            for inpOption in inpObj.options:
-                row = {}
-                row[inp] = inpOption
-                for outp in outputs:
-                    outpObj = getattr(self, outp)
 
-                    inpObj.currentOption = inpOption
-                    row[outp] = outpObj()
-                    inpObj.currentOption = None
+class Input:
+    pass
 
-                rows.append(row)
 
-            # Generate PostScript
-            self.renderTable(rows)
+class Slide(Input):
+    def __init__(self, a, b):
+        self.a = a
+        self.b = b
 
-    def renderTable(self, rows):
+    def __mul__(self, other):
+        return Slide(self.a * other, self.b * other)
+
+    def render(self, outputs):
+        container = SVG(viewBox="-100 -100 200 200")
+        # We need to mount the container so we can attach events to
+        # the SVG subelements.
+        preview.innerHTML = ""
+        preview <= container
+        container <= svg.circle(cx=0, cy=0, r=100, fill="white",
+                                stroke="red", stroke_width=0.01)
+        
+        for outp in outputs:
+            outpObj = getattr(self, outp)
+            outpSlide = outpObj()
+
+            outpSlide.render([])
+
+class OneOf(Input):
+    def __init__(self, sep=10):
+        self.callerLineNumber = sys._getframe(1).f_lineno
+
+        self.sep = sep
+
+        self.currentChoice = None
+        self.choices = {}
+
+    def __eq__(self, other):
+        # Remember that `other` is a possible choice; the renderer
+        # will run through the whole table of possible choices in
+        # another pass later.
+        if other not in self.choices:
+            self.choices[other] = True
+            return False
+
+        return self.currentChoice == other
+
+    def render(self, volvelle, outputs):
+        rows = []
+        for choice in self.choices:
+            row = {}
+            row[self.name] = choice
+            for outp in outputs:
+                outpObj = getattr(volvelle, outp)
+
+                self.currentChoice = choice
+                row[outp] = outpObj()
+                self.currentChoice = None
+
+            rows.append(row)
+
+        # Generate PostScript:
+
         container = SVG(viewBox="-100 -100 200 200")
         # We need to mount the container so we can attach events to
         # the SVG subelements.
@@ -60,7 +108,6 @@ class Volvelle:
                 return
             dx = ev.pageX - self.drag["startX"]
             dy = ev.pageY - self.drag["startY"]
-            print("Dragging", dy, self.drag["column"])
 
             lines = window.code.split('\n')
             line = lines[self.drag["column"].callerLineNumber-1]
@@ -82,7 +129,7 @@ class Volvelle:
             return ret
 
         def renderField(idx, row, columnName):
-            column = getattr(self, columnName)
+            column = getattr(volvelle, columnName)
             sep = column.sep if hasattr(column, "sep") else 10
             field = svg.text(row[columnName], x=0, y=sep+(idx*sep), font_size=10)
             field.bind("mousedown", lambda ev: handleMouseDown(column, ev))
@@ -92,26 +139,3 @@ class Volvelle:
             rowG = renderRow(row)
             rowG.setAttribute("transform", "rotate(" + str(idx/len(rows) * 360) + ") translate(50)")
             container <= rowG
-
-
-class Input:
-    pass
-
-
-class OneOf(Input):
-    def __init__(self, sep=10):
-        self.callerLineNumber = sys._getframe(1).f_lineno
-
-        self.sep = sep
-
-        self.currentOption = None
-        self.options = {}
-
-    def __eq__(self, other):
-        # instantiate other as an option; we'll run through the whole
-        # table of input domain later
-        if other not in self.options:
-            self.options[other] = True
-            return False
-
-        return self.currentOption == other
