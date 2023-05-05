@@ -1,6 +1,9 @@
 # PyVolvelle
 
-WIP. Go to online editor: https://osnr.github.io/PyVolvelle/editor/
+WIP. (that is, will break with most shapes different from the built-in
+examples, probably)
+
+Go to online editor: https://osnr.github.io/PyVolvelle/editor/
 
 > [...] the European adoption of this useful device is reflected in
 > the name we have for it, volvelle, from the Latin volvere meaning
