@@ -32,6 +32,10 @@ Slide -- real numbers between A and B
 
 You can express functions, or you can express lookup tables with if statements.
 
+## License
+
+MIT
+
 ## TODO
 
 Doesn't currently work headless / with CPython (need new backend to emit SVG
