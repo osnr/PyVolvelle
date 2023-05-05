@@ -26,16 +26,28 @@ class Volvelle(object):
         for outp in self._outputs.values():
             outp.fn()
 
-        container = SVG(viewBox="-100 -100 200 200")
+        container = SVG(viewBox="-110 -110 225 225")
         # We need to mount the container so we can attach events to
         # the SVG subelements.
         preview.innerHTML = ""
         preview <= container
-        container <= svg.circle(cx=0, cy=0, r=100, fill="white",
-                                stroke="red", stroke_width=0.01)
+
+        container.innerHTML = """
+<defs>
+    <clipPath id="clip-volvelle">
+      <circle cx="0" cy="0" r="100" />
+    </clipPath>
+</defs>
+        """
+        container <= svg.circle(id="volvelle",
+                                cx=0, cy=0, r=100, fill="white",
+                                stroke="#555", stroke_width=0.5)
+        g = svg.g()
+        container <= g
+        g.setAttribute("clip-path", "url(#clip-volvelle)")
 
         for inp in self._inputs.values():
-            inp.render(container, self._inputs, self._outputs)
+            inp.render(g, self._inputs, self._outputs)
 
 
 class Input:
