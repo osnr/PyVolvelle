@@ -1,6 +1,7 @@
 import sys
 import re
 import math
+import types
 
 from browser import document, svg, console, window
 from browser.html import SVG
@@ -13,7 +14,9 @@ class Volvelle(object):
         for propName in dir(self):
             if not propName.startswith("_") and not hasattr(Volvelle, propName):
                 prop = getattr(self, propName)
-                if callable(prop):
+                if isinstance(prop, Output):
+                    self._outputs[propName] = prop
+                elif callable(prop):
                     prop = Output(prop, name=propName)
                     self._outputs[propName] = prop
                 elif isinstance(prop, Input):
@@ -117,13 +120,25 @@ class OneOf(Input):
 
             lines = window.code.split('\n')
             line = lines[self.drag["column"].callerLineNumber-1]
-            print(line)
-            start = len("\n".join(lines[0:self.drag["column"].callerLineNumber-1])) + 1
-            end = start + len(line)
-            line = line.replace("OneOf()", "OneOf(offsetDistance=0, offsetAngle=0)")
-            line = re.sub(r"offsetDistance=[\-\d\.]+", "offsetDistance=" + str(dr), line)
-            line = re.sub(r"offsetAngle=[\-\d\.]+", "offsetAngle=" + str(dtheta), line)
-            window.replaceLine(start, end, line)
+            if line.lstrip().startswith("def "): # it's an output
+                prevline = lines[self.drag["column"].callerLineNumber-2]
+                if prevline.lstrip().startswith("@output"):
+                    prevline = prevline.replace("@output()", "@output(offsetDistance=0, offsetAngle=0)")
+                    prevline = re.sub(r"offsetDistance=[\-\d\.]+", f"offsetDistance={dr:.4f}", prevline)
+                    prevline = re.sub(r"offsetAngle=[\-\d\.]+", f"offsetAngle={dtheta:.4f}", prevline)
+                    start = len("\n".join(lines[0:self.drag["column"].callerLineNumber-2])) + 1
+                    end = start + len(lines[self.drag["column"].callerLineNumber-2])
+                    window.replaceLine(start, end, prevline)
+                else:
+                    start = len("\n".join(lines[0:self.drag["column"].callerLineNumber-1])) + 1
+                    window.replaceLine(start, start, re.match(r"[ \t]+", line)[0] + "@output(offsetDistance=0, offsetAngle=0)\n")
+            else:
+                start = len("\n".join(lines[0:self.drag["column"].callerLineNumber-1])) + 1
+                end = start + len(line)
+                line = line.replace("OneOf()", "OneOf(offsetDistance=0, offsetAngle=0)")
+                line = re.sub(r"offsetDistance=[\-\d\.]+",f"offsetDistance={dr:.4f}", line)
+                line = re.sub(r"offsetAngle=[\-\d\.]+", f"offsetAngle={dtheta:.4f}", line)
+                window.replaceLine(start, end, line)
 
         def handleMouseUp(ev):
             self.drag = None
@@ -155,15 +170,22 @@ class OneOf(Input):
 
 
 class Output:
-    def __init__(self, fn, name):
+    def __init__(self, fn, name, offsetDistance=0, offsetAngle=0):
         self.fn = fn
         self.name = name
         self.callerLineNumber = fn.__code__.co_firstlineno
 
+        self.offsetDistance = offsetDistance
+        self.offsetAngle = offsetAngle
+
+    def __get__(self, instance, owner):
+        self.fn = types.MethodType(self.fn, instance)
+        return self
+
 
 def output(offsetDistance=0, offsetAngle=0):
     def decorator(fn):
-        def decorated_fn(*args, **kwargs):
-            return fn(*args, **kwargs)
-        return decorated_fn
+        return Output(fn=fn, name=fn.__name__,
+                      offsetDistance=offsetDistance, offsetAngle=offsetAngle)
+
     return decorator
