@@ -64,7 +64,7 @@ class Slide(Input):
             label.setAttribute("transform", "rotate(" + str((i - self.a)/(self.b - self.a) * 360) + ")")
             container <= label
 
-        for outp in outputs:
+        for outp in outputs.values():
             outpSlide = outp.fn()
 
             outpSlide.render(container, [], [], sep=sep+20)
