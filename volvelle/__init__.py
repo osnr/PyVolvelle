@@ -18,7 +18,7 @@ class Volvelle(object):
                     self._outputs[propName] = prop
                 elif callable(prop):
                     prop = Output(prop, name=propName,
-                                  offsetDistance=(1 + len(self._outputs))*10,
+                                  offsetDistance=(1 + len(self._outputs))*40,
                                   offsetAngle=0)
                     self._outputs[propName] = prop
                 elif isinstance(prop, Input):
@@ -28,8 +28,8 @@ class Volvelle(object):
         for outp in self._outputs.values():
             outp.fn()
 
-        dataContainer = SVG(viewBox="-110 -110 220 220")
-        selectorContainer = SVG(viewBox="-110 -110 220 220")
+        dataContainer = SVG(viewBox="-110 -110 220 220", id="svg-data")
+        selectorContainer = SVG(viewBox="-110 -110 220 220", id="svg-selector")
         # We need to mount the container so we can attach events to
         # the SVG subelements.
         preview.innerHTML = ""
@@ -187,15 +187,15 @@ class OneOf(Input):
             offsetAngle = column.offsetAngle
             if boxesOnly:
                 field = svg.g()
-                field <= svg.rect(x=offsetDistance*math.cos(offsetAngle),
-                                  y=offsetDistance*math.sin(offsetAngle),
+                field <= svg.rect(x=offsetDistance*math.cos(offsetAngle) - 10,
+                                  y=offsetDistance*math.sin(offsetAngle) - 2.5,
                                   width=40,
-                                  height=10,
+                                  height=15,
                                   stroke="#999", stroke_width=1,
-                                  fill="white")
+                                  fill="rgba(0, 0, 0, 0)")
                 field <= svg.text(columnName,
-                                  x=offsetDistance*math.cos(offsetAngle),
-                                  y=offsetDistance*math.sin(offsetAngle) - 1,
+                                  x=offsetDistance*math.cos(offsetAngle) - 10,
+                                  y=offsetDistance*math.sin(offsetAngle) - 3.5,
                                   font_size=10,
                                   fill="#999")
             else:
@@ -209,12 +209,12 @@ class OneOf(Input):
 
         for idx, row in enumerate(rows):
             rowG = renderRow(row)
-            rowG.setAttribute("transform", "rotate(" + str(idx/len(rows) * 360) + ") translate(50)")
+            rowG.setAttribute("transform", "rotate(" + str(idx/len(rows) * 360) + ") translate(20)")
             dataContainer <= rowG
 
             if idx == 0:
                 selectorRowG = renderRow(row, boxesOnly=True)
-                selectorRowG.setAttribute("transform", "rotate(" + str(idx/len(rows) * 360) + ") translate(50)")
+                selectorRowG.setAttribute("transform", "rotate(" + str(idx/len(rows) * 360) + ") translate(20)")
                 selectorContainer <= selectorRowG
 
 

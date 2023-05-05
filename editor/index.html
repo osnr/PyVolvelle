@@ -14,10 +14,19 @@
     <div class="examples" style="position: absolute; bottom: 0; left: 0; width: 100%"></div>
 
     <div class="preview" style="position: absolute; top: 0; left: 50%; width: 50%; height: 100%; overflow-y: auto; background-color: slategray"></div>
+    <div style="position: absolute; bottom: 0; right: 0">
+      <button class="print-data">Print data layer</button>
+      <button class="print-selector">Print selector layer</button>
+    </div>
 
     <script>
      const examples = {
        names: `
+# PyVolvelle is a language embedded in Python that can generate
+# _volvelles_.  A volvelle is a sort of paper analog computer. On the
+# right, you see the generated volvelle, with data layer at top and
+# selector layer at bottom.)
+
 from volvelle import *
 
 class Names(Volvelle):
@@ -35,7 +44,17 @@ class Names(Volvelle):
       return "Blinn"
 
 Names().render()
-`,
+
+# Download the SVGs (use buttons on bottom right) and print the
+# volvelle. If both layers have stuff on them, print each layer on a
+# separate cardstock page and join them at the center so the selector
+# layer can rotate. Cut holes in the selector layer to see the data
+# underneath.
+
+#  | More examples below
+#  |
+#  |
+#  V`,
        doubler: `
 from volvelle import *
 
@@ -77,7 +96,7 @@ Doubler().render()
        });
      };
      
-     const examplesEl = document.body.getElementsByClassName("examples")[0];
+     const examplesEl = document.getElementsByClassName("examples")[0];
      for (const [exampleName, exampleCode] of Object.entries(examples)) {
        const btn = document.createElement("button");
        btn.innerText = exampleName;
@@ -90,6 +109,26 @@ Doubler().render()
          } });
        };
      }
+
+     function saveSvg(svgEl, name) {
+       svgEl.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+       var svgData = svgEl.outerHTML;
+       var preface = '<?xml version="1.0" standalone="no"?>\r\n';
+       var svgBlob = new Blob([preface, svgData], {type:"image/svg+xml;charset=utf-8"});
+       var svgUrl = URL.createObjectURL(svgBlob);
+       var downloadLink = document.createElement("a");
+       downloadLink.href = svgUrl;
+       downloadLink.download = name;
+       document.body.appendChild(downloadLink);
+       downloadLink.click();
+       document.body.removeChild(downloadLink);
+     }
+     document.getElementsByClassName("print-data")[0].onclick = () => {
+       saveSvg(document.getElementById("svg-data"), "volvelle-data.svg");
+     };
+     document.getElementsByClassName("print-selector")[0].onclick = () => {
+       saveSvg(document.getElementById("svg-selector"), "volvelle-selector.svg");
+     };
     </script>
   </body>
 </html>
