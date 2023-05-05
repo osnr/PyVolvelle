@@ -1,6 +1,6 @@
 # PyVolvelle
 
-WIP
+WIP. Go to online editor: https://osnr.github.io/PyVolvelle/editor/
 
 > [...] the European adoption of this useful device is reflected in
 > the name we have for it, volvelle, from the Latin volvere meaning
@@ -31,3 +31,8 @@ OneOf -- discrete choice
 Slide -- real numbers between A and B
 
 You can express functions, or you can express lookup tables with if statements.
+
+## TODO
+
+Doesn't currently work headless / with CPython (need new backend to emit SVG
+strings, shouldn't be too hard)
