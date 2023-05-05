@@ -9,11 +9,11 @@
     <script src="vendor/codemirror.js"></script>
   </head>
 
-  <body onload="brython(1)">
-    <div class="editor" style="position: absolute; top: 0; left: 0; width: 50%; height: 100%"></div>
+  <body onload="brython(1)" style="overflow: hidden">
+    <div class="editor" style="position: absolute; top: 0; left: 0; width: 49%; height: 100%"></div>
     <div class="examples" style="position: absolute; bottom: 0; left: 0; width: 100%"></div>
 
-    <div class="preview" style="position: absolute; top: 0; left: 51%; width: 50%; height: 100%; background-color: slategray"></div>
+    <div class="preview" style="position: absolute; top: 0; left: 50%; width: 50%; height: 100%; overflow-y: auto; background-color: slategray"></div>
 
     <script>
      const examples = {

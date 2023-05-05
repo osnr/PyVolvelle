@@ -26,28 +26,37 @@ class Volvelle(object):
         for outp in self._outputs.values():
             outp.fn()
 
-        container = SVG(viewBox="-110 -110 225 225")
+        dataContainer = SVG(viewBox="-110 -110 220 220")
+        selectorContainer = SVG(viewBox="-110 -110 220 220")
         # We need to mount the container so we can attach events to
         # the SVG subelements.
         preview.innerHTML = ""
-        preview <= container
+        preview <= dataContainer
+        preview <= selectorContainer
 
-        container.innerHTML = """
+        dataContainer.innerHTML = selectorContainer.innerHTML = """
 <defs>
     <clipPath id="clip-volvelle">
       <circle cx="0" cy="0" r="100" />
     </clipPath>
 </defs>
         """
-        container <= svg.circle(id="volvelle",
-                                cx=0, cy=0, r=100, fill="white",
-                                stroke="#555", stroke_width=0.5)
-        g = svg.g()
-        container <= g
-        g.setAttribute("clip-path", "url(#clip-volvelle)")
+        dataContainer <= svg.circle(id="volvelle-data",
+                                    cx=0, cy=0, r=100, fill="white",
+                                    stroke="#555", stroke_width=0.5)
+        dataG = svg.g()
+        dataContainer <= dataG
+        dataG.setAttribute("clip-path", "url(#clip-volvelle)")
+
+        selectorContainer <= svg.circle(id="volvelle-selector",
+                                        cx=0, cy=0, r=100, fill="white",
+                                        stroke="#555", stroke_width=0.5)
+        selectorG = svg.g()
+        selectorContainer <= selectorG
+        selectorG.setAttribute("clip-path", "url(#clip-volvelle)")
 
         for inp in self._inputs.values():
-            inp.render(g, self._inputs, self._outputs)
+            inp.render(dataG, selectorG, self._inputs, self._outputs)
 
 
 class Input:
@@ -68,18 +77,19 @@ class Slide(Input):
     def __add__(self, other):
         return Slide(self.a + other, self.b + other)
 
-    def render(self, container, inputs, outputs, sep=0):
-        container <= svg.circle(cx=0, cy=0, r=80-sep, fill="none",
-                                stroke="black", stroke_width=1)
+    def render(self, dataContainer, selectorContainer,
+               inputs, outputs, sep=0):
+        dataContainer <= svg.circle(cx=0, cy=0, r=80-sep, fill="none",
+                                    stroke="black", stroke_width=1)
         for i in range(self.a, self.b):
             label = svg.text(i, x=0, y=-80+sep)
             label.setAttribute("transform", "rotate(" + str((i - self.a)/(self.b - self.a) * 360) + ")")
-            container <= label
+            dataContainer <= label
 
         for outp in outputs.values():
             outpSlide = outp.fn()
 
-            outpSlide.render(container, [], [], sep=sep+20)
+            outpSlide.render(dataContainer, [], [], sep=sep+20)
 
 class OneOf(Input):
     def __init__(self, offsetAngle=0, offsetDistance=0):
@@ -101,7 +111,8 @@ class OneOf(Input):
 
         return self.currentChoice == other
 
-    def render(self, container, inputs, outputs):
+    def render(self, dataContainer, selectorContainer,
+               inputs, outputs):
         rows = []
         for choice in self.choices:
             row = {}
@@ -116,7 +127,6 @@ class OneOf(Input):
         # Generate PostScript:
         self.drag = None
         def handleMouseDown(column, ev):
-            console.log("mousedown", column)
             self.drag = {"target": ev.target, "column": column,
                          "startX": ev.pageX, "startY": ev.pageY}
             document.body.bind("mousemove", handleMouseMove)
@@ -157,20 +167,34 @@ class OneOf(Input):
             document.body.unbind("mousemove", handleMouseMove)
             document.body.unbind("mouseup", handleMouseUp)
 
-        def renderRow(row):
+        def renderRow(row, boxesOnly=False):
             ret = svg.g()
             for columnIdx, columnName in enumerate(row):
-                ret <= renderField(columnIdx, row, columnName)
+                ret <= renderField(columnIdx, row, columnName, boxesOnly)
             return ret
 
-        def renderField(columnIdx, row, columnName):
+        def renderField(columnIdx, row, columnName, boxesOnly=False):
             column = outputs[columnName] if columnName in outputs else inputs[columnName]
             offsetDistance = column.offsetDistance if hasattr(column, "offsetDistance") else columnIdx*20
             offsetAngle = column.offsetAngle if hasattr(column, "offsetAngle") else 0
-            field = svg.text(row[columnName],
-                             x=offsetDistance*math.cos(offsetAngle),
-                             y=offsetDistance*math.sin(offsetAngle),
-                             font_size=10)
+            if boxesOnly:
+                field = svg.g()
+                field <= svg.rect(x=offsetDistance*math.cos(offsetAngle),
+                                  y=offsetDistance*math.sin(offsetAngle),
+                                  width=40,
+                                  height=10,
+                                  stroke="#999", stroke_width=1,
+                                  fill="white")
+                field <= svg.text(columnName,
+                                  x=offsetDistance*math.cos(offsetAngle),
+                                  y=offsetDistance*math.sin(offsetAngle) - 1,
+                                  font_size=10,
+                                  fill="#999")
+            else:
+                field = svg.text(row[columnName],
+                                 x=offsetDistance*math.cos(offsetAngle),
+                                 y=offsetDistance*math.sin(offsetAngle),
+                                 font_size=10)
             field.style.cursor = "move"
             field.bind("mousedown", lambda ev: handleMouseDown(column, ev))
             return field
@@ -178,7 +202,12 @@ class OneOf(Input):
         for idx, row in enumerate(rows):
             rowG = renderRow(row)
             rowG.setAttribute("transform", "rotate(" + str(idx/len(rows) * 360) + ") translate(50)")
-            container <= rowG
+            dataContainer <= rowG
+
+            if idx == 0:
+                selectorRowG = renderRow(row, boxesOnly=True)
+                selectorRowG.setAttribute("transform", "rotate(" + str(idx/len(rows) * 360) + ") translate(50)")
+                selectorContainer <= selectorRowG
 
 
 class Output:
