@@ -17,7 +17,9 @@ class Volvelle(object):
                 if isinstance(prop, Output):
                     self._outputs[propName] = prop
                 elif callable(prop):
-                    prop = Output(prop, name=propName)
+                    prop = Output(prop, name=propName,
+                                  offsetDistance=(1 + len(self._outputs))*10,
+                                  offsetAngle=0)
                     self._outputs[propName] = prop
                 elif isinstance(prop, Input):
                     prop.name = propName
@@ -89,7 +91,9 @@ class Slide(Input):
         for outp in outputs.values():
             outpSlide = outp.fn()
 
-            outpSlide.render(dataContainer, [], [], sep=sep+20)
+            outpSlide.render(dataContainer, selectorContainer,
+                             [], [], sep=sep+20)
+
 
 class OneOf(Input):
     def __init__(self, offsetAngle=0, offsetDistance=0):
@@ -126,8 +130,10 @@ class OneOf(Input):
 
         # Generate PostScript:
         self.drag = None
-        def handleMouseDown(column, ev):
+        def handleMouseDown(column, offsetDistance, offsetAngle, ev):
             self.drag = {"target": ev.target, "column": column,
+                         "originalOffsetDistance": offsetDistance,
+                         "originalOffsetAngle": offsetAngle,
                          "startX": ev.pageX, "startY": ev.pageY}
             document.body.bind("mousemove", handleMouseMove)
             document.body.bind("mouseup", handleMouseUp)
@@ -140,26 +146,28 @@ class OneOf(Input):
             dr = math.sqrt(dx**2 + dy**2)
             dtheta = math.atan2(dy, dx)
 
+            offsetDistance = self.drag["originalOffsetDistance"] + dr
+            offsetAngle = self.drag["originalOffsetAngle"] + dtheta
+
             lines = window.code.split('\n')
             line = lines[self.drag["column"].callerLineNumber-1]
             if line.lstrip().startswith("def "): # it's an output
                 prevline = lines[self.drag["column"].callerLineNumber-2]
                 if prevline.lstrip().startswith("@output"):
-                    prevline = prevline.replace("@output()", "@output(offsetDistance=0, offsetAngle=0)")
-                    prevline = re.sub(r"offsetDistance=[\-\d\.]+", f"offsetDistance={dr:.4f}", prevline)
-                    prevline = re.sub(r"offsetAngle=[\-\d\.]+", f"offsetAngle={dtheta:.4f}", prevline)
+                    prevline = re.sub(r"offsetDistance=[\-\d\.]+", f"offsetDistance={offsetDistance:.4f}", prevline)
+                    prevline = re.sub(r"offsetAngle=[\-\d\.]+", f"offsetAngle={offsetAngle:.4f}", prevline)
                     start = len("\n".join(lines[0:self.drag["column"].callerLineNumber-2])) + 1
                     end = start + len(lines[self.drag["column"].callerLineNumber-2])
                     window.replaceLine(start, end, prevline)
                 else:
                     start = len("\n".join(lines[0:self.drag["column"].callerLineNumber-1])) + 1
-                    window.replaceLine(start, start, re.match(r"[ \t]+", line)[0] + "@output(offsetDistance=0, offsetAngle=0)\n")
+                    window.replaceLine(start, start, re.match(r"[ \t]+", line)[0] + f"@output(offsetDistance={offsetDistance:.4f}, offsetAngle={offsetAngle:.4f})\n")
             else:
                 start = len("\n".join(lines[0:self.drag["column"].callerLineNumber-1])) + 1
                 end = start + len(line)
-                line = line.replace("OneOf()", "OneOf(offsetDistance=0, offsetAngle=0)")
-                line = re.sub(r"offsetDistance=[\-\d\.]+",f"offsetDistance={dr:.4f}", line)
-                line = re.sub(r"offsetAngle=[\-\d\.]+", f"offsetAngle={dtheta:.4f}", line)
+                line = line.replace("OneOf()", f"OneOf(offsetDistance={offsetDistance:.4f}, offsetAngle={offsetAngle:.4f})")
+                line = re.sub(r"offsetDistance=[\-\d\.]+",f"offsetDistance={offsetDistance:.4f}", line)
+                line = re.sub(r"offsetAngle=[\-\d\.]+", f"offsetAngle={offsetAngle:.4f}", line)
                 window.replaceLine(start, end, line)
 
         def handleMouseUp(ev):
@@ -175,8 +183,8 @@ class OneOf(Input):
 
         def renderField(columnIdx, row, columnName, boxesOnly=False):
             column = outputs[columnName] if columnName in outputs else inputs[columnName]
-            offsetDistance = column.offsetDistance if hasattr(column, "offsetDistance") else columnIdx*20
-            offsetAngle = column.offsetAngle if hasattr(column, "offsetAngle") else 0
+            offsetDistance = column.offsetDistance
+            offsetAngle = column.offsetAngle
             if boxesOnly:
                 field = svg.g()
                 field <= svg.rect(x=offsetDistance*math.cos(offsetAngle),
@@ -196,7 +204,7 @@ class OneOf(Input):
                                  y=offsetDistance*math.sin(offsetAngle),
                                  font_size=10)
             field.style.cursor = "move"
-            field.bind("mousedown", lambda ev: handleMouseDown(column, ev))
+            field.bind("mousedown", lambda ev: handleMouseDown(column, offsetDistance, offsetAngle, ev))
             return field
 
         for idx, row in enumerate(rows):
@@ -211,7 +219,7 @@ class OneOf(Input):
 
 
 class Output:
-    def __init__(self, fn, name, offsetDistance=0, offsetAngle=0):
+    def __init__(self, fn, name, offsetDistance, offsetAngle):
         self.fn = fn
         self.name = name
         self.callerLineNumber = fn.__code__.co_firstlineno
@@ -224,7 +232,7 @@ class Output:
         return self
 
 
-def output(offsetDistance=0, offsetAngle=0):
+def output(offsetDistance, offsetAngle):
     def decorator(fn):
         return Output(fn=fn, name=fn.__name__,
                       offsetDistance=offsetDistance, offsetAngle=offsetAngle)
