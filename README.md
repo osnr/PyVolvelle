@@ -41,7 +41,7 @@ MIT
 
 ## TODO
 
-- Error reporting
+- ~Error reporting~
 
 - Simulator
 

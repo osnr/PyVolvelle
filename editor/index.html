@@ -78,20 +78,43 @@ Doubler().render()
      const {EditorView, keymap} = CM["@codemirror/view"];
      const {EditorState} = CM["@codemirror/state"];
      const {python} = CM["@codemirror/lang-python"];
+     const {linter} = CM["@codemirror/lint"];
 
-     const liveReload = EditorView.updateListener.of(e => {
-       const code = e.state.doc.toString();
+     let diagnostics = [];
+     const liveReload = EditorView.updateListener.of(view => {
+       const code = view.state.doc.toString();
        window.code = code;
        try {
          eval(__BRYTHON__.python_to_js(code));
+         diagnostics = [];
        } catch (e) {
          console.error(e);
+         window.era = e;
+         let lineNumber = false;
+         if ('end_lineno' in e) {
+           lineNumber = e.end_lineno;
+         } else if ('$linenos' in e && e.$linenos.length > 0) {
+           lineNumber = e.$linenos[e.$linenos.length - 1];
+         }
+         if (lineNumber) {
+           const line = view.state.doc.line(lineNumber);
+           diagnostics = [{
+             from: line.from, to: line.to, severity: "error", message: e.toString()
+           }];
+         } else {
+           diagnostics = [{
+             from: 0, to: 1, severity: "error", message: e.toString()
+           }];
+         }
        }
+     });
+     const errorReportingLinter = linter(view => {
+       return diagnostics;
      });
 
      const view = new EditorView({
        doc: examples["names"].trimStart(),
-       extensions: [basicSetup, python(), liveReload],
+       extensions: [basicSetup, python(), liveReload, errorReportingLinter],
        parent: document.getElementsByClassName("editor")[0]
      });
 
