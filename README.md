@@ -41,5 +41,9 @@ MIT
 
 ## TODO
 
-Doesn't currently work headless / with CPython (need new backend to emit SVG
+- Error reporting
+
+- Simulator
+
+- Doesn't currently work headless / with CPython (need new backend to emit SVG
 strings, shouldn't be too hard)
