@@ -38,6 +38,8 @@ class Names(Volvelle):
   def __init__(self):
     self.firstname = OneOf()
 
+  # Try adding a new output field \`def middlename(self)\`, or try
+  # adding a new input value \`elif\` case (with a new person's name).
   def lastname(self):
     if self.firstname == "Omar":
       return "Rizwan"
@@ -67,6 +69,8 @@ class Doubler(Volvelle):
   def __init__(self):
     self.x = Slide(1, 10)
 
+  # Try changing \`* 2\` to \`* 3\`, or doing \`(self.x + 1) * 2\`
+  # (addition works too!)
   def two_x(self):
     return self.x * 2
 

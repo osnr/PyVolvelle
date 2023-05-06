@@ -47,3 +47,5 @@ MIT
 
 - Doesn't currently work headless / with CPython (need new backend to emit SVG
 strings, shouldn't be too hard)
+
+- More mathematical operations (esp nonlinear ones)
